@@ -1,0 +1,1 @@
+rsync -azP ../coral-lab-dev corallab-s1@10.164.8.169:jzietek/coral-lab-dev
