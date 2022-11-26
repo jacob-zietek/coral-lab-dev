@@ -2,6 +2,8 @@
 This script extracts keyframes out of a video for COLMAP processing
 and NeRF generation. It chooses the least blurred image out of an interval of images
 via its laplacian variance.
+
+python3 extract_video_frames_laplaian.py --input ../data/11-21-22-haas-hallway.MOV --output ../data/haas-images-11-21 --numPictures 250
 """
 
 import cv2
