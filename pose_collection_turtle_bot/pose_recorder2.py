@@ -28,25 +28,23 @@ if not os.path.exists("data"):
     os.makedirs("data")
 
 os.makedirs(f'data/{date}/images')
-os.makedirs(f'date/{date}/odom')
+os.makedirs(f'data/{date}/odom')
 
 print(f'Successfully created directories for {date}.')
 
-
 bridge = CvBridge()
-
 
 imgcount = 0
 
-
 def callback(image, odom):
+    global imgcount
     # Save image data
     image = bridge.imgmsg_to_cv2(msg)
     cv2.imwrite(f'data/{date}/images/{imgcount:09}.png', image)
 
     # Save odom data
-    f = open(f'data/{date}/odom/{imgcount:09}.png', "x")
-    f.write(odom)
+    f = open(f'data/{date}/odom/{imgcount:09}.yml', "x")
+    f.write(str(odom.pose.pose))
     f.close()
 
     imgcount+=1
@@ -57,11 +55,15 @@ def listener():
     odom_sub = message_filters.Subscriber("odom", Odometry)
     image_sub = message_filters.Subscriber("/camera/image", Image)
 
-    ts = message_filters.TimeSynchronizer([image_sub, odom_sub], 10)
+    ts = message_filters.ApproximateTimeSynchronizer([image_sub, odom_sub], queue_size=100, slop=0.1)
 
     ts.registerCallback(callback)
 
+    print("Synchronizer started")
+
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
+
+print("Starting to listen for data...")
 
 listener()
