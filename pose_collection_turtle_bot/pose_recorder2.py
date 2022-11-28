@@ -55,7 +55,7 @@ def callback(image, odom):
 def listener():
     rospy.init_node('pose_recorder', anonymous=True)
     odom_sub = message_filters.Subscriber("odom", Odometry)
-    image_sub = Subscriber("/camera/image", Image)
+    image_sub = message_filters.Subscriber("/camera/image", Image)
 
     ts = message_filters.TimeSynchronizer([image_sub, odom_sub], 10)
 
