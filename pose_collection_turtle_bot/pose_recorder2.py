@@ -39,7 +39,7 @@ imgcount = 0
 def callback(image, odom):
     global imgcount
     # Save image data
-    image = bridge.imgmsg_to_cv2(msg)
+    image = bridge.imgmsg_to_cv2(image)
     cv2.imwrite(f'data/{date}/images/{imgcount:09}.png', image)
 
     # Save odom data
