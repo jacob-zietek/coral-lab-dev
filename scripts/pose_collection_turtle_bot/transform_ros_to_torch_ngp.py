@@ -1,8 +1,8 @@
 """
 This script transforms the ODOM and Image data collected
 by ROS in the pose_collection2.py script to instant-npg/
-torch-ngp compatible transform.json format to train
-a NeRF.
+torch-ngp compatible scene with the images and 
+transform.json to train a NeRF.
 
 Input folder should be in the format of 
 
@@ -19,12 +19,20 @@ data/
         ...
 
 Each image has its cooresponding odom data.
+
+python3 transform_ros_to_torch_ngp.py --input data/11_28_2022_16_06_00 --numPictures 1000 --output data/test --run_laplacian True
 """
 
 import cv2
 import argparse
 from itertools import islice
 import glob
+from scipy.spatial.transform import Rotation as R
+import os
+import pathlib
+import shutil
+import yaml
+import json
 
 
 def batched(iterable, n):
@@ -53,9 +61,6 @@ def extract_least_blurriest_frames_laplacian(picture_paths: list[str], target_nu
     Given a list of pictures, this function will return about the target_num_pictures least
     blurriest ones. 
     """
-
-    #print(picture_paths, target_num_pictures)
-
     return_list = []
 
     total_num_pictures = len(picture_paths)
@@ -63,12 +68,75 @@ def extract_least_blurriest_frames_laplacian(picture_paths: list[str], target_nu
     partitionlen = total_num_pictures // target_num_pictures
 
     for partition in batched(picture_paths, partitionlen):
-
         least_blurriest = sorted(partition, key=lambda x: laplacian_var(cv2.imread(x)), reverse=True)[0]
-
         return_list.append(least_blurriest)
 
-    return least_blurriest
+    return return_list
+
+
+def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[str]):
+    """
+    Creates a instant-ngp/torch-ngp compatible scene.
+    """
+
+    transforms = {}
+
+
+    output_images_path = output_path + "/images"
+
+    if not os.path.exists(output_images_path):
+        os.makedirs(output_images_path)
+
+    for picture in picture_paths: shutil.copy(picture, output_images_path)
+
+    frames = []
+
+    for image, odom in zip(picture_paths, odom_paths):
+
+        frame = {}
+
+        frame["file_path"] = "images/" + pathlib.PurePath(image).name
+
+        img = cv2.imread(image)
+        sharpness = laplacian_var(img)
+        frame["sharpness"] = sharpness
+
+        odom_data = None
+
+        with open(odom, 'r') as file:
+            odom_data = yaml.safe_load(file)
+
+        rot_quaternion = odom_data["orientation"]
+        position_vector = odom_data["position"]
+
+        rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
+                                  rot_quaternion['w']]).as_matrix()
+
+        transformation_matrix = []
+
+        # Create a transformation matrix from the rot matrix and position
+        # vector. Rot mtx is 3x3, pos vec is 3x1
+        # r r r p
+        # r r r p
+        # r r r p
+        # 0 0 0 1
+        
+        # Append each row from the rotation matrix
+        transformation_matrix.append(list(rot_matrix[0]) + [position_vector['x']])
+        transformation_matrix.append(list(rot_matrix[1]) + [position_vector['y']])
+        transformation_matrix.append(list(rot_matrix[2]) + [position_vector['z']])
+        transformation_matrix.append([0, 0, 0, 1])
+
+        frame["transform_matrix"] = transformation_matrix
+
+        frames.append(frame)
+
+    transforms["frames"] = frames
+
+    print(transforms)
+
+    with open(output_path + "/transforms.json", "w") as outfile:
+        json.dump(transforms, outfile)
 
 
 if __name__ == "__main__":
@@ -84,8 +152,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     picture_paths = sorted(glob.glob(args.input+"/images/*"))
+    odom_paths = []
 
-    extract_least_blurriest_frames_laplacian(picture_paths, args.numPictures)
+    if args.laplacian:
+        picture_paths = extract_least_blurriest_frames_laplacian(picture_paths, args.numPictures)
+    
+    # Replace .png with .yml and folder to odom
+    odom_paths = [x.replace("images", "odom")[:-4] + ".yml" for \
+                  x in picture_paths] 
 
-
+    create_scene(args.output, picture_paths, odom_paths)
 
