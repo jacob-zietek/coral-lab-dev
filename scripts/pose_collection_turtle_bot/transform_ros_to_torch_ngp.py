@@ -136,7 +136,7 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
     print(transforms)
 
     with open(output_path + "/transforms.json", "w") as outfile:
-        json.dump(transforms, outfile)
+        json.dump(transforms, outfile, sort_keys=True, indent=4)
 
 
 if __name__ == "__main__":
