@@ -79,7 +79,35 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
     Creates a instant-ngp/torch-ngp compatible scene.
     """
 
-    transforms = {}
+    AABB_SCALE = 16
+    angle_x = 0.925
+    angle_y = 0.7155
+    w = 640
+    h = 480
+    k1 = 0.16399
+    k2 = -0.27184
+    p1 = 0.00105
+    p2 = -0.00166
+    cx = w / 2
+    cy = h / 2
+    fl_x = 2
+    fl_y = 2.67
+
+    transforms = {
+        "camera_angle_x": angle_x,
+        "camera_angle_y": angle_y,
+        "fl_x": fl_x,
+        "fl_y": fl_y,
+        "k1": k1,
+        "k2": k2,
+        "p1": p1,
+        "p2": p2,
+        "cx": cx,
+        "cy": cy,
+        "w": w,
+        "h": h,
+        "aabb_scale": AABB_SCALE
+    }
 
 
     output_images_path = output_path + "/images"
