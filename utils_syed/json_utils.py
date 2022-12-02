@@ -67,7 +67,11 @@ class NeRFFrameCollectionMetadata(JsonBaseModel):
             # translations_mean += frame_transform[:3, -1].flatten() / len(self.frames)
         # self.offset = translations_mean.tolist()
         self.offset = bounds.mean(axis=1).flatten().tolist()[::-1]
-
+    
+        print(bounds - np.array(self.offset[::-1]).reshape(3,1))
+        print(bounds) 
+        print(self.offset)
+        print(self.offset[::-1])
         # translations_mean = np.array([0, -1.5, 1.1]).flatten()  # predefined offset
         # for idx, frame_metadata in enumerate(self.frames):
         #     frame_transform = np.array(frame_metadata.transform_matrix)
@@ -91,12 +95,12 @@ class NeRFFrameCollectionMetadata(JsonBaseModel):
 if __name__ == "__main__":
     # Create a split from a NeRFFrameCollectionMetadata
 
-    assert len(sys.argv) == 2
-    data_path = sys.argv[1]  # data_path should contain a "transforms_metadata.json" file in it.
-    # data_path = "/media/talha/05725941-f803-421b-a3d5-0e5efcd351cc/data/igibson-camera-arbitrary-frames-1-fov60"
+    #data_path = sys.argv[1]  # data_path should contain a "transforms_metadata.json" file in it.
+    data_path = "/home/jzietek/Documents/coral-lab-dev/scripts/pose_collection_turtle_bot/data/test"
     base_dir = Path(data_path)
-    metadata = NeRFFrameCollectionMetadata.from_json_file(base_dir / "transforms_metadata.json")
+    metadata = NeRFFrameCollectionMetadata.from_json_file(base_dir / "transforms.json")
     metadata.compute_overall_offset_in_camera_poses()
+    exit()
     frames_list = metadata.frames
     split_point = 0.8  # 80 train / 20 test split
 
