@@ -110,7 +110,6 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         #"aabb_scale": AABB_SCALE
     }
 
-
     output_images_path = output_path + "/images"
 
     if not os.path.exists(output_images_path):
@@ -138,83 +137,31 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         rot_quaternion = odom_data["orientation"]
         position_vector = odom_data["position"]
 
-
-        # Rotations from odom are Z-up, swap z and y
-        #rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
-        #                          rot_quaternion['w']]).as_matrix()
-        #rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
-        #                          rot_quaternion['w']]).as_matrix()
-
-        rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
-                                  rot_quaternion['w']]).as_matrix()
-
-        transformation_matrix = []
-
-        test_angle = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
+        # Both odom and instant_ngp are +Z up
+        odom_euler = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
                                   rot_quaternion['w']]).as_euler('xyz', degrees=True)
 
-        print()
-        test_angle[1]=0
-        #test_angle[0]=0
-        #test_angle[2]=90
-        #test_angle[2] = test_angle[2] + 180
-        test_angle[0] = 90
-        #test_angle[0] = test_angle[2]
-        test_angle[2] -=90
-        print(test_angle)
-        print(R.from_euler('xyz', test_angle, degrees=True).as_matrix())
-        print(rot_matrix)
-        print()
+        # Default camera position in instant_ngp is pointing toward -Z facing +X
+        # Rotate camera 90 deg on the X axis to make the camera point toward +X, 
+        # then adjust the Z rotation given by the odom data -90 deg
+        odom_euler[1] = 0
+        odom_euler[0] = 90
+        odom_euler[2] -= 90
 
 
-        rot_matrix = R.from_euler('xyz', test_angle, degrees=True).as_matrix()
+        rot_matrix = R.from_euler('xyz', odom_euler, degrees=True).as_matrix()
 
 
-        # Create a transformation matrix from the rot matrix and position
-        # vector. Rot mtx is 3x3, pos vec is 3x1
-        # r r r p
-        # r r r p
-        # r r r p
-        # 0 0 0 1
-
-        mtx = np.array(rot_matrix)
-        
-        #mtx[:, [0, 2]] = mtx[:, [2, 0]]
-
-        #r_flip_y = R.from_rotvec(np.pi * np.array([0, 1, 0])).as_matrix()
-
-
-        # DEBUG
-
-        r = R.from_matrix(mtx)
-        print(r.as_euler('xyz', degrees='True'))
-
-        # DEBUG
-
-
+        transformation_matrix = []
         
         # Append each row from the rotation matrix
-        transformation_matrix.append(list(rot_matrix[0]) + [position_vector['x']]) # camera is at + x
+        transformation_matrix.append(list(rot_matrix[0]) + [position_vector['x']])
         transformation_matrix.append(list(rot_matrix[1]) + [position_vector['y']])
         transformation_matrix.append(list(rot_matrix[2]) + [position_vector['z']])
         transformation_matrix.append([0, 0, 0, 1])
 
-        print("-------------")
-        print(transformation_matrix)
-        print(rot_matrix)
-        print(position_vector)
 
-        #mtx = np.array(transformation_matrix)
-
-        #mtx[:, [0, 2]] = mtx[:, [2, 0]]
-
-        #r_flip_y = R.from_rotvec(np.pi * np.array([0, 1, 0]))
-
-        #mtx[:, [1, 2]] = mtx[:, [2, 1]]
-
-        #mtx = np.linalg.inv(mtx)
-
-        frame["transform_matrix"] =  transformation_matrix #mtx.tolist() #mtx_inv.tolist()
+        frame["transform_matrix"] =  transformation_matrix
 
         frames.append(frame)
 
@@ -241,14 +188,16 @@ if __name__ == "__main__":
     picture_paths = sorted(glob.glob(args.input+"/images/*"))
     odom_paths = []
 
-    print(args.laplacian)
-
     if args.laplacian:
+        print("Extracing least blurriest frames...")
         picture_paths = extract_least_blurriest_frames_laplacian(picture_paths, args.numPictures)
+        print("Done!")
     
-    # Replace .png with .yml and folder to odom
+    # Replace .png or .jpg with .yml and folder to odom
     odom_paths = [x.replace("images", "odom")[:-4] + ".yml" for \
                   x in picture_paths] 
 
+    print("Creating instant ngp scene...")
     create_scene(args.output, picture_paths, odom_paths)
+    print("Done!")
 
