@@ -1,6 +1,6 @@
 """
 This script transforms the ODOM and Image data collected
-by ROS in the pose_collection2.py script to instant-npg/
+by ROS in the pose_collection.py script to instant-npg/
 torch-ngp compatible scene with the images and 
 transform.json to train a NeRF.
 
@@ -75,7 +75,7 @@ def extract_least_blurriest_frames_laplacian(picture_paths: list[str], target_nu
     return return_list
 
 
-def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[str]):
+def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[str], camera_translation: float):
     """
     Creates a instant-ngp/torch-ngp compatible scene.
     """
@@ -182,6 +182,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--run_laplacian", dest='laplacian', type=bool, help='Whether or not to extract the least blurriest frames using laplacian variance. Final transform.json will only contain the least blurriest frames.')
     parser.add_argument('--numPictures', dest='numPictures', type=int, help='Rough number of pictures to target. Used if run_laplacian is True.')
+    parser.add_argument('--camera_translation', dest="camera_translation", type=float, help="The distance of the camera from the center of the turtlebot. This assumes the camera is facing away from the center.")
 
     args = parser.parse_args()
 
@@ -198,6 +199,6 @@ if __name__ == "__main__":
                   x in picture_paths] 
 
     print("Creating instant ngp scene...")
-    create_scene(args.output, picture_paths, odom_paths)
+    create_scene(args.output, picture_paths, odom_paths, args.camera_translation)
     print("Done!")
 
