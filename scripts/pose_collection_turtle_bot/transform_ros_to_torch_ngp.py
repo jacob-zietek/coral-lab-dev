@@ -96,15 +96,15 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
 
     transforms = {
         "camera_angle_x": angle_x,
-        #"camera_angle_y": angle_y,
+        "camera_angle_y": angle_y,
         #"fl_x": fl_x,
         #"fl_y": fl_y,
         "k1": k1,
         "k2": k2,
         "p1": p1,
         "p2": p2,
-        #"cx": cx,
-        #"cy": cy,
+        "cx": cx,
+        "cy": cy,
         "w": w,
         "h": h,
         #"aabb_scale": AABB_SCALE
@@ -142,10 +142,33 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         # Rotations from odom are Z-up, swap z and y
         #rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
         #                          rot_quaternion['w']]).as_matrix()
-        rot_matrix = R.from_quat([rot_quaternion['z'], rot_quaternion['x'], rot_quaternion['x'],\
+        #rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
+        #                          rot_quaternion['w']]).as_matrix()
+
+        rot_matrix = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
                                   rot_quaternion['w']]).as_matrix()
 
         transformation_matrix = []
+
+        test_angle = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
+                                  rot_quaternion['w']]).as_euler('xyz', degrees=True)
+
+        print()
+        test_angle[1]=0
+        #test_angle[0]=0
+        #test_angle[2]=90
+        #test_angle[2] = test_angle[2] + 180
+        test_angle[0] = 90
+        #test_angle[0] = test_angle[2]
+        test_angle[2] -=90
+        print(test_angle)
+        print(R.from_euler('xyz', test_angle, degrees=True).as_matrix())
+        print(rot_matrix)
+        print()
+
+
+        rot_matrix = R.from_euler('xyz', test_angle, degrees=True).as_matrix()
+
 
         # Create a transformation matrix from the rot matrix and position
         # vector. Rot mtx is 3x3, pos vec is 3x1
@@ -158,18 +181,8 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         
         #mtx[:, [0, 2]] = mtx[:, [2, 0]]
 
-        r_flip_y = R.from_rotvec(np.pi * np.array([0, 1, 0])).as_matrix()
+        #r_flip_y = R.from_rotvec(np.pi * np.array([0, 1, 0])).as_matrix()
 
-        #print(r_flip_y)
-        print(mtx)
-
-        mtx_flip = np.matmul(mtx, r_flip_y)
-
-        #mtx = mtx_flip
-
-        #mtx = np.linalg.inv(mtx)
-
-        
 
         # DEBUG
 
@@ -178,13 +191,12 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
 
         # DEBUG
 
-        rot_matrix = mtx #mtx_flip
 
         
         # Append each row from the rotation matrix
-        transformation_matrix.append(list(rot_matrix[0]) + [position_vector['z']]) # camera is at + x
+        transformation_matrix.append(list(rot_matrix[0]) + [position_vector['x']]) # camera is at + x
         transformation_matrix.append(list(rot_matrix[1]) + [position_vector['y']])
-        transformation_matrix.append(list(rot_matrix[2]) + [-position_vector['x']])
+        transformation_matrix.append(list(rot_matrix[2]) + [position_vector['z']])
         transformation_matrix.append([0, 0, 0, 1])
 
         print("-------------")
