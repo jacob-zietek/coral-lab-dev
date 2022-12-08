@@ -152,6 +152,19 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         rot_matrix = R.from_euler('xyz', odom_euler, degrees=True).as_matrix()
 
 
+        if camera_translation:
+
+            theta = odom_euler[2] + 90
+            mag = camera_translation
+
+            dy = mag * np.sin(np.deg2rad(theta))
+            dx = mag * np.cos(np.deg2rad(theta))
+
+            position_vector['x'] += dx
+            position_vector['y'] += dy
+
+
+
         transformation_matrix = []
         
         # Append each row from the rotation matrix
