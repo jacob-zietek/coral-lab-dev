@@ -20,7 +20,7 @@ data/
 
 Each image has its cooresponding odom data.
 
-python3 transform_ros_to_torch_ngp.py --input data/11_28_2022_16_06_00 --numPictures 1000 --output data/test --run_laplacian True
+python3 transform_ros_to_torch_ngp.py --input data/11_28_2022_16_06_00 --numPictures 1000 --output data/test --run_laplacian True --camera_translation 0.14
 """
 
 import cv2
@@ -69,7 +69,8 @@ def extract_least_blurriest_frames_laplacian(picture_paths: list[str], target_nu
     partitionlen = total_num_pictures // target_num_pictures
 
     for partition in batched(picture_paths, partitionlen):
-        least_blurriest = sorted(partition, key=lambda x: laplacian_var(cv2.imread(x)), reverse=True)[0]
+        least_blurriest = sorted(partition, key=lambda x: laplacian_var(
+            cv2.imread(x)), reverse=True)[0]
         return_list.append(least_blurriest)
 
     return return_list
@@ -97,8 +98,8 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
     transforms = {
         "camera_angle_x": angle_x,
         "camera_angle_y": angle_y,
-        #"fl_x": fl_x,
-        #"fl_y": fl_y,
+        # "fl_x": fl_x,
+        # "fl_y": fl_y,
         "k1": k1,
         "k2": k2,
         "p1": p1,
@@ -107,7 +108,7 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         "cy": cy,
         "w": w,
         "h": h,
-        #"aabb_scale": AABB_SCALE
+        # "aabb_scale": AABB_SCALE
     }
 
     output_images_path = output_path + "/images"
@@ -115,7 +116,8 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
     if not os.path.exists(output_images_path):
         os.makedirs(output_images_path)
 
-    for picture in picture_paths: shutil.copy(picture, output_images_path)
+    for picture in picture_paths:
+        shutil.copy(picture, output_images_path)
 
     frames = []
 
@@ -138,19 +140,17 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         position_vector = odom_data["position"]
 
         # Both odom and instant_ngp are +Z up
-        odom_euler = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],\
+        odom_euler = R.from_quat([rot_quaternion['x'], rot_quaternion['y'], rot_quaternion['z'],
                                   rot_quaternion['w']]).as_euler('xyz', degrees=True)
 
         # Default camera position in instant_ngp is pointing toward -Z facing +X
-        # Rotate camera 90 deg on the X axis to make the camera point toward +X, 
+        # Rotate camera 90 deg on the X axis to make the camera point toward +X,
         # then adjust the Z rotation given by the odom data -90 deg
         odom_euler[1] = 0
         odom_euler[0] = 90
         odom_euler[2] -= 90
 
-
         rot_matrix = R.from_euler('xyz', odom_euler, degrees=True).as_matrix()
-
 
         if camera_translation:
 
@@ -163,24 +163,24 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
             position_vector['x'] += dx
             position_vector['y'] += dy
 
-
-
         transformation_matrix = []
-        
+
         # Append each row from the rotation matrix
-        transformation_matrix.append(list(rot_matrix[0]) + [position_vector['x']])
-        transformation_matrix.append(list(rot_matrix[1]) + [position_vector['y']])
-        transformation_matrix.append(list(rot_matrix[2]) + [position_vector['z']])
+        transformation_matrix.append(
+            list(rot_matrix[0]) + [position_vector['x']])
+        transformation_matrix.append(
+            list(rot_matrix[1]) + [position_vector['y']])
+        transformation_matrix.append(
+            list(rot_matrix[2]) + [position_vector['z']])
         transformation_matrix.append([0, 0, 0, 1])
 
-
-        frame["transform_matrix"] =  transformation_matrix
+        frame["transform_matrix"] = transformation_matrix
 
         frames.append(frame)
 
     transforms["frames"] = frames
 
-    #print(transforms)
+    # print(transforms)
 
     with open(output_path + "/transforms.json", "w") as outfile:
         json.dump(transforms, outfile, sort_keys=True, indent=4)
@@ -190,12 +190,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--input', dest='input', type=str, help='Input folder to read from. This should be the root of the directory, with root/images and root/odom.')
-    parser.add_argument('--output', dest='output', type=str, help='Output folder.')
+    parser.add_argument('--input', dest='input', type=str,
+                        help='Input folder to read from. This should be the root of the directory, with root/images and root/odom.')
+    parser.add_argument('--output', dest='output',
+                        type=str, help='Output folder.')
 
-    parser.add_argument("--run_laplacian", dest='laplacian', type=bool, help='Whether or not to extract the least blurriest frames using laplacian variance. Final transform.json will only contain the least blurriest frames.')
-    parser.add_argument('--numPictures', dest='numPictures', type=int, help='Rough number of pictures to target. Used if run_laplacian is True.')
-    parser.add_argument('--camera_translation', dest="camera_translation", type=float, help="The distance of the camera from the center of the turtlebot. This assumes the camera is facing away from the center.")
+    parser.add_argument("--run_laplacian", dest='laplacian', type=bool,
+                        help='Whether or not to extract the least blurriest frames using laplacian variance. Final transform.json will only contain the least blurriest frames.')
+    parser.add_argument('--numPictures', dest='numPictures', type=int,
+                        help='Rough number of pictures to target. Used if run_laplacian is True.')
+    parser.add_argument('--camera_translation', dest="camera_translation", type=float,
+                        help="The distance of the camera from the center of the turtlebot. This assumes the camera is facing away from the center.")
 
     args = parser.parse_args()
 
@@ -204,14 +209,15 @@ if __name__ == "__main__":
 
     if args.laplacian:
         print("Extracing least blurriest frames...")
-        picture_paths = extract_least_blurriest_frames_laplacian(picture_paths, args.numPictures)
+        picture_paths = extract_least_blurriest_frames_laplacian(
+            picture_paths, args.numPictures)
         print("Done!")
-    
+
     # Replace .png or .jpg with .yml and folder to odom
-    odom_paths = [x.replace("images", "odom")[:-4] + ".yml" for \
-                  x in picture_paths] 
+    odom_paths = [x.replace("images", "odom")[:-4] + ".yml" for
+                  x in picture_paths]
 
     print("Creating instant ngp scene...")
-    create_scene(args.output, picture_paths, odom_paths, args.camera_translation)
+    create_scene(args.output, picture_paths,
+                 odom_paths, args.camera_translation)
     print("Done!")
-

@@ -11,11 +11,14 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--input', dest='input', type=str, help='Input file to read from')
+parser.add_argument('--input', dest='input', type=str,
+                    help='Input file to read from')
 parser.add_argument('--output', dest='output', type=str, help='Output folder')
-parser.add_argument('--numPictures', dest='numPictures', type=int, help='Rough number of pictures to target')
+parser.add_argument('--numPictures', dest='numPictures',
+                    type=int, help='Rough number of pictures to target')
 
 args = parser.parse_args()
+
 
 def laplacian_var(img):
     # calculates the laplacian variance to find
@@ -26,6 +29,7 @@ def laplacian_var(img):
 
     # return laplacian variance
     return cv2.Laplacian(grey, cv2.CV_64F).var()
+
 
 input_f = args.input
 output_f = args.output
@@ -60,7 +64,7 @@ while success:
     image_buffer.sort(key=laplacian_var)
     cv2.imwrite(f'{output_f}/{imgcount:08}.png', image_buffer[0])
     imgcount += 1
-    
+
     inner = 0
     image_buffer = []
 

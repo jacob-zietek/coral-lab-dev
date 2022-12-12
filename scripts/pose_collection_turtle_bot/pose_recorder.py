@@ -36,6 +36,7 @@ bridge = CvBridge()
 
 imgcount = 0
 
+
 def callback(image, odom):
     global imgcount
     # Save image data
@@ -47,7 +48,7 @@ def callback(image, odom):
     f.write(str(odom.pose.pose))
     f.close()
 
-    imgcount+=1
+    imgcount += 1
 
 
 def listener():
@@ -55,7 +56,8 @@ def listener():
     odom_sub = message_filters.Subscriber("odom", Odometry)
     image_sub = message_filters.Subscriber("/camera/image", Image)
 
-    ts = message_filters.ApproximateTimeSynchronizer([image_sub, odom_sub], queue_size=100, slop=0.1)
+    ts = message_filters.ApproximateTimeSynchronizer(
+        [image_sub, odom_sub], queue_size=100, slop=0.1)
 
     ts.registerCallback(callback)
 
@@ -63,6 +65,7 @@ def listener():
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
+
 
 print("Starting to listen for data...")
 
