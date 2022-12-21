@@ -20,7 +20,7 @@ data/
 
 Each image has its cooresponding odom data.
 
-python3 transform_ros_to_torch_ngp.py --input data/11_28_2022_16_06_00 --numPictures 1000 --output data/test --run_laplacian True --camera_translation 0.14
+python3 transform_ros_to_torch_ngp.py --input data/11_28_2022_16_06_00 --numPictures 1000 --output data/test --run_laplacian True --camera_translation 0.14 --camera_roll 3
 """
 
 import cv2
@@ -76,7 +76,7 @@ def extract_least_blurriest_frames_laplacian(picture_paths: list[str], target_nu
     return return_list
 
 
-def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[str], camera_translation: float):
+def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[str], camera_translation: float, camera_roll: float):
     """
     Creates a instant-ngp/torch-ngp compatible scene.
     """
@@ -100,14 +100,14 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         "camera_angle_y": angle_y,
         # "fl_x": fl_x,
         # "fl_y": fl_y,
-        "k1": k1,
-        "k2": k2,
-        "p1": p1,
-        "p2": p2,
-        "cx": cx,
-        "cy": cy,
-        "w": w,
-        "h": h,
+        #"k1": k1,
+        #"k2": k2,
+        #"p1": p1,
+        #"p2": p2,
+        #"cx": cx,
+        #"cy": cy,
+        #"w": w,
+        #"h": h,
         # "aabb_scale": AABB_SCALE
     }
 
@@ -146,9 +146,11 @@ def create_scene(output_path: str, picture_paths: list[str], odom_paths: list[st
         # Default camera position in instant_ngp is pointing toward -Z facing +X
         # Rotate camera 90 deg on the X axis to make the camera point toward +X,
         # then adjust the Z rotation given by the odom data -90 deg
-        odom_euler[1] = 0
         odom_euler[0] = 90
         odom_euler[2] -= 90
+
+        # If the camera is tilted sideways on the roll axis, apply a rotation to the y axis
+        odom_euler[1] = camera_roll if camera_roll else 0
 
         rot_matrix = R.from_euler('xyz', odom_euler, degrees=True).as_matrix()
 
@@ -201,6 +203,8 @@ if __name__ == "__main__":
                         help='Rough number of pictures to target. Used if run_laplacian is True.')
     parser.add_argument('--camera_translation', dest="camera_translation", type=float,
                         help="The distance of the camera from the center of the turtlebot. This assumes the camera is facing away from the center.")
+    parser.add_argument('--camera_roll', dest='camera_roll', type=float,
+                        help="Camera roll in degrees")
 
     args = parser.parse_args()
 
@@ -219,5 +223,5 @@ if __name__ == "__main__":
 
     print("Creating instant ngp scene...")
     create_scene(args.output, picture_paths,
-                 odom_paths, args.camera_translation)
+                 odom_paths, args.camera_translation, args.camera_roll)
     print("Done!")
