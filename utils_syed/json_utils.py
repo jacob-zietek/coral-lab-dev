@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # Create a split from a NeRFFrameCollectionMetadata
 
     #data_path = sys.argv[1]  # data_path should contain a "transforms_metadata.json" file in it.
-    data_path = "/home/jzietek/Documents/coral-lab-dev/scripts/pose_collection_turtle_bot/data/test"
+    data_path = "/home/jzietek/Documents/coral-lab-dev/scripts/pose_collection_turtle_bot/data/test2"
     base_dir = Path(data_path)
     metadata = NeRFFrameCollectionMetadata.from_json_file(base_dir / "transforms.json")
     metadata.compute_overall_offset_in_camera_poses()
